@@ -137,7 +137,7 @@ load_dotenv()
 app = Flask(__name__)
 url = os.getenv("DATABASE_URL")
 connection = psycopg2.connect(url)
-CORS(app, resources={r"/api/*": {"origins": ["https://flasker485-157431734465.herokuapp.com"]}})
+CORS(app)
 
 @app.route("/")  # Define the root route
 def home():
