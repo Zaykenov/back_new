@@ -85,8 +85,8 @@ CREATE_APPOINTMENT_TABLE = (
 
 INSERT_CUSTOMER = (
     """INSERT INTO CUSTOMER (
-        email, given_name, surname, city, phone_number, profile_description, password
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING user_id"""
+        user_id, email, given_name, surname, city, phone_number, profile_description, password
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING user_id"""
 )
 
 INSERT_CAREGIVER = (
@@ -148,6 +148,7 @@ def home():
 @app.post("/api/customer")
 def create_customer(): 
     data = request.get_json()
+    user_id = data.get("user_id")
     email = data.get("email")
     given_name = data.get("given_name")
     surname = data.get("surname")
@@ -160,7 +161,7 @@ def create_customer():
         with connection.cursor() as cursor: 
             cursor.execute(CREATE_CUSTOMER_TABLE)
             cursor.execute(INSERT_CUSTOMER, (
-                email, given_name, surname, city, phone_number, profile_description, password
+                user_id, email, given_name, surname, city, phone_number, profile_description, password
             ))
             user_id = cursor.fetchone()[0]
 
