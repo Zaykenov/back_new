@@ -2,6 +2,7 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 CREATE_CUSTOMER_TABLE = (
     """CREATE TABLE IF NOT EXISTS CUSTOMER (
@@ -136,6 +137,7 @@ load_dotenv()
 app = Flask(__name__)
 url = os.getenv("DATABASE_URL")
 connection = psycopg2.connect(url)
+CORS(app, resources={r"/api/*": {"origins": ["https://flasker485-157431734465.herokuapp.com"]}})
 
 @app.route("/")  # Define the root route
 def home():
