@@ -177,11 +177,15 @@ def get_customer(user_id):
 def get_all_customers():
     with connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM CUSTOMER")
+            cursor.execute("SELECT user_id, email, given_name, surname, city, phone_number, profile_description, password FROM CUSTOMER")
             customers = cursor.fetchall()
 
     if customers:
-        return jsonify({"customers": customers}), 200
+        # Convert the result to the desired JSON format
+        customer_list = [{"user_id": customer[0], "email": customer[1], "given_name": customer[2],
+                          "surname": customer[3], "city": customer[4], "phone_number": customer[5],
+                          "profile_description": customer[6], "password": customer[7]} for customer in customers]
+        return {"customers": customer_list}, 200
     else:
         return jsonify({"message": "No customers found"}), 404
 
