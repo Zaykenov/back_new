@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 
 CREATE_CUSTOMER_TABLE = (
     """CREATE TABLE IF NOT EXISTS CUSTOMER (
-    user_id INT PRIMARY KEY,
+    user_id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     given_name VARCHAR(50) NOT NULL,
     surname VARCHAR(50) NOT NULL,
@@ -85,20 +85,16 @@ CREATE_APPOINTMENT_TABLE = (
 
 INSERT_CUSTOMER = (
     """INSERT INTO CUSTOMER (
-        user_id, email, given_name, surname, city, phone_number, profile_description, password
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING user_id"""
+        email, given_name, surname, city, phone_number, profile_description, password
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING user_id"""
 )
 
 INSERT_CAREGIVER = (
-    """INSERT INTO CAREGIVER (
-        photo, gender, caregiving_type, hourly_rate
-    ) VALUES (%s, %s, %s, %s) RETURNING caregiver_user_id"""
+    """INSERT INTO CAREGIVER (caregiver_user_id, photo, gender, caregiving_type, hourly_rate)VALUES (%s, %s, %s, %s, %s) RETURNING caregiver_user_id"""
 )
 
 INSERT_MEMBER = (
-    """INSERT INTO MEMBER (
-        house_rules
-    ) VALUES (%s) RETURNING member_user_id"""
+    """INSERT INTO MEMBER (member_user_id, house_rules)VALUES (%s, %s) RETURNING member_user_id"""
 )
 
 INSERT_ADDRESS = (
@@ -148,7 +144,6 @@ def home():
 @app.post("/api/customer")
 def create_customer(): 
     data = request.get_json()
-    user_id = data.get("user_id")
     email = data.get("email")
     given_name = data.get("given_name")
     surname = data.get("surname")
@@ -161,7 +156,7 @@ def create_customer():
         with connection.cursor() as cursor: 
             cursor.execute(CREATE_CUSTOMER_TABLE)
             cursor.execute(INSERT_CUSTOMER, (
-                user_id, email, given_name, surname, city, phone_number, profile_description, password
+                email, given_name, surname, city, phone_number, profile_description, password
             ))
             user_id = cursor.fetchone()[0]
 
