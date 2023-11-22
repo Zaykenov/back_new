@@ -181,7 +181,18 @@ def get_all_customers():
             customers = cursor.fetchall()
 
     if customers:
-        return jsonify({"customers": customers}), 200
+        # Extracting column names from the cursor.description
+        column_names = [desc[0] for desc in cursor.description]
+        
+        # Constructing the desired JSON format
+        formatted_customers = []
+        for customer in customers:
+            formatted_customer = {}
+            for i in range(len(column_names)):
+                formatted_customer[column_names[i]] = customer[i]
+            formatted_customers.append(formatted_customer)
+
+        return jsonify({"customers": formatted_customers}), 200
     else:
         return jsonify({"message": "No customers found"}), 404
 
