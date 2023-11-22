@@ -206,24 +206,17 @@ def get_all_customers():
 def update_customer(user_id):
     data = request.get_json()
 
-    # Fetch the existing customer data
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(SELECT_CUSTOMER, (user_id,))
-            existing_customer = cursor.fetchone()
+    if not data:
+        return jsonify({"message": "No data provided for update"}), 400
 
-    if not existing_customer:
-        return jsonify({"message": "Customer not found"}), 404
-
-    # Merge the existing data with the new data
-    updated_customer_data = {key: data.get(key, existing_customer[i]) for i, key in enumerate(["email", "given_name", "surname", "city", "phone_number", "profile_description", "password"])}
+    set_clause = ", ".join(f"{key} = %s" for key in data.keys())
+    values = tuple(data.values()) + (user_id,)
 
     with connection:
         with connection.cursor() as cursor:
-            cursor.execute(UPDATE_CUSTOMER, (*updated_customer_data.values(), user_id))
+            cursor.execute(f"UPDATE CUSTOMER SET {set_clause} WHERE user_id = %s", values)
 
     return jsonify({"message": f"Customer {user_id} updated"}), 200
-
 
 @app.delete("/api/customer/<int:user_id>")
 def delete_customer(user_id):
