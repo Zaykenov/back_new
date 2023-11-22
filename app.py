@@ -60,12 +60,13 @@ CREATE_JOB_TABLE = (
 
 CREATE_JOB_APPLICATION_TABLE = (
     """CREATE TABLE IF NOT EXISTS JOB_APPLICATION (
-        caregiver_user_id INT,
-        job_id INT,
-        date_applied DATE NOT NULL DEFAULT CURRENT_DATE,
-        PRIMARY KEY (caregiver_user_id, job_id),
-        FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id),
-        FOREIGN KEY (job_id) REFERENCES JOB(job_id)
+    caregiver_user_id INT,
+    job_id INT,
+    date_applied DATE NOT NULL DEFAULT CURRENT_DATE,
+    PRIMARY KEY (caregiver_user_id, job_id),
+    FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id) ON DELETE CASCADE,
+    FOREIGN KEY (job_id) REFERENCES JOB(job_id)
+)
     )"""
 )
 
@@ -176,7 +177,7 @@ def get_customer(user_id):
         return jsonify({"customer": customer}), 200
     else:
         return jsonify({"message": "Customer not found"}), 404
-        
+
 @app.get("/api/customers")
 def get_all_customers():
     with connection:
