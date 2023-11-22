@@ -176,6 +176,18 @@ def get_customer(user_id):
         return jsonify({"customer": customer}), 200
     else:
         return jsonify({"message": "Customer not found"}), 404
+        
+@app.get("/api/customers")
+def get_all_customers():
+    with connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM CUSTOMER")
+            customers = cursor.fetchall()
+
+    if customers:
+        return jsonify({"customers": customers}), 200
+    else:
+        return jsonify({"message": "No customers found"}), 404
 
 @app.put("/api/customer/<int:user_id>")
 def update_customer(user_id):
