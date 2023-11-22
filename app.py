@@ -2,8 +2,6 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-from collections import OrderedDict
-from flask_cors import CORS
 
 CREATE_CUSTOMER_TABLE = (
     """CREATE TABLE IF NOT EXISTS CUSTOMER (
@@ -179,22 +177,11 @@ def get_customer(user_id):
 def get_all_customers():
     with connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM CUSTOMER ORDER BY user_id")
+            cursor.execute("SELECT * FROM CUSTOMER")
             customers = cursor.fetchall()
 
     if customers:
-        # Extracting column names from the cursor.description
-        column_names = [desc[0] for desc in cursor.description]
-
-        # Constructing the desired JSON format
-        formatted_customers = []
-        for customer in customers:
-            formatted_customer = OrderedDict()
-            for column_name in column_names:
-                formatted_customer[column_name] = customer[column_names.index(column_name)]
-            formatted_customers.append(formatted_customer)
-
-        return jsonify({"customers": formatted_customers}), 200
+        return jsonify({"customers": customers}), 200
     else:
         return jsonify({"message": "No customers found"}), 404
 
