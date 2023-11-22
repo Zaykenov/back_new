@@ -181,13 +181,18 @@ def get_all_customers():
             customers = cursor.fetchall()
 
     if customers:
-        # Convert the result to the desired JSON format
-        customer_list = [{"user_id": customer[0], "email": customer[1], "given_name": customer[2],
-                          "surname": customer[3], "city": customer[4], "phone_number": customer[5],
-                          "profile_description": customer[6], "password": customer[7]} for customer in customers]
+        # Define the order of keys in the desired JSON format
+        keys_order = ["user_id", "email", "given_name", "surname", "city", "phone_number", "profile_description", "password"]
+
+        # Convert the result to the desired JSON format with preserved order
+        customer_list = [
+            dict(zip(keys_order, customer)) for customer in customers
+        ]
+
         return {"customers": customer_list}, 200
     else:
         return jsonify({"message": "No customers found"}), 404
+
 
 @app.put("/api/customer/<int:user_id>")
 def update_customer(user_id):
