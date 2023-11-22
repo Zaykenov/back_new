@@ -186,12 +186,13 @@ def get_all_customers():
 
         # Convert the result to the desired JSON format with preserved order
         customer_list = [
-            dict(zip(keys_order, customer)) for customer in customers
+            {key: value for key, value in zip(keys_order, customer)} for customer in customers
         ]
 
         return {"customers": customer_list}, 200
     else:
         return jsonify({"message": "No customers found"}), 404
+
 
 
 @app.put("/api/customer/<int:user_id>")
