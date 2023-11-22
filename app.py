@@ -136,7 +136,6 @@ SELECT_CUSTOMER = """SELECT * FROM CUSTOMER WHERE user_id = %s"""
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app)
 url = os.getenv("DATABASE_URL")
 connection = psycopg2.connect(url)
 
