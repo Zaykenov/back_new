@@ -171,10 +171,14 @@ def get_customer(user_id):
         with connection.cursor() as cursor:
             cursor.execute(SELECT_CUSTOMER, (user_id,))
             customer = cursor.fetchone()
+
     if customer:
-        return jsonify({"customer": customer}), 200
+        keys_order = ["user_id", "email", "given_name", "surname", "city", "phone_number", "profile_description", "password"]
+        customer_dict = {key: value for key, value in zip(keys_order, customer)}
+        return {"customers": [customer_dict]}, 200
     else:
         return jsonify({"message": "Customer not found"}), 404
+
 
 @app.get("/api/customers")
 def get_all_customers():
