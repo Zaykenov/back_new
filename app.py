@@ -5,83 +5,82 @@ from flask import Flask, request, jsonify
 
 CREATE_CUSTOMER_TABLE = (
     """CREATE TABLE IF NOT EXISTS CUSTOMER (
-        user_id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        given_name VARCHAR(50) NOT NULL,
-        surname VARCHAR(50) NOT NULL,
-        city VARCHAR(50),
-        phone_number VARCHAR(15),
-        profile_description TEXT,
-        password VARCHAR(255) NOT NULL
-    )"""
+    user_id INT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    given_name VARCHAR(50) NOT NULL,
+    surname VARCHAR(50) NOT NULL,
+    city VARCHAR(50),
+    phone_number VARCHAR(20),
+    profile_description TEXT,
+    password VARCHAR(255) NOT NULL
+);"""
 )
 
 
 
 CREATE_CAREGIVER_TABLE = (
     """CREATE TABLE IF NOT EXISTS CAREGIVER (
-        caregiver_user_id SERIAL PRIMARY KEY,
-        photo BYTEA,
-        gender VARCHAR(10),
-        caregiving_type VARCHAR(50) NOT NULL,
-        hourly_rate DECIMAL(10, 2) NOT NULL,
-        FOREIGN KEY (caregiver_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
-    )"""
+    caregiver_user_id INT PRIMARY KEY,
+    photo VARCHAR(255),
+    gender VARCHAR(10),
+    caregiving_type VARCHAR(50),
+    hourly_rate DECIMAL(10, 2),
+    FOREIGN KEY (caregiver_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
+);"""
 )
 
 CREATE_MEMBER_TABLE = (
     """CREATE TABLE IF NOT EXISTS MEMBER (
-        member_user_id SERIAL PRIMARY KEY,
-        house_rules TEXT,
-        FOREIGN KEY (member_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
-    )"""
+    member_user_id INT PRIMARY KEY,
+    house_rules TEXT,
+    FOREIGN KEY (member_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
+);"""
 )
 
 CREATE_ADDRESS_TABLE = (
     """CREATE TABLE IF NOT EXISTS ADDRESS (
-        member_user_id SERIAL PRIMARY KEY,
-        house_number VARCHAR(10) NOT NULL,
-        street VARCHAR(100) NOT NULL,
-        town VARCHAR(50) NOT NULL,
-        FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id)
-    )"""
+    member_user_id INT PRIMARY KEY,
+    house_number VARCHAR(10),
+    street VARCHAR(255),
+    town VARCHAR(50),
+    FOREIGN KEY (member_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
+);"""
 )
 
 CREATE_JOB_TABLE = (
     """CREATE TABLE IF NOT EXISTS JOB (
-        job_id SERIAL PRIMARY KEY,
-        member_user_id INT,
-        required_caregiving_type VARCHAR(50) NOT NULL,
-        other_requirements TEXT,
-        date_posted DATE NOT NULL DEFAULT CURRENT_DATE,
-        FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id)
-    )"""
+    job_id INT PRIMARY KEY,
+    member_user_id INT,
+    required_caregiving_type VARCHAR(50),
+    other_requirements TEXT,
+    date_posted DATE,
+    FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id) ON DELETE CASCADE
+);"""
 )
 
 CREATE_JOB_APPLICATION_TABLE = (
     """CREATE TABLE IF NOT EXISTS JOB_APPLICATION (
     caregiver_user_id INT,
     job_id INT,
-    date_applied DATE NOT NULL DEFAULT CURRENT_DATE,
+    date_applied DATE,
     PRIMARY KEY (caregiver_user_id, job_id),
     FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id) ON DELETE CASCADE,
-    FOREIGN KEY (job_id) REFERENCES JOB(job_id)
-)
-    )"""
+    FOREIGN KEY (job_id) REFERENCES JOB(job_id) ON DELETE CASCADE
+);"""
 )
 
 CREATE_APPOINTMENT_TABLE = (
     """CREATE TABLE IF NOT EXISTS APPOINTMENT (
-        appointment_id SERIAL PRIMARY KEY,
-        caregiver_user_id INT,
-        member_user_id INT,
-        appointment_date DATE NOT NULL,
-        appointment_time TIME NOT NULL,
-        work_hours INT NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending',
-        FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id),
-        FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id)
-    )"""
+    appointment_id INT PRIMARY KEY,
+    caregiver_user_id INT,
+    member_user_id INT,
+    appointment_date DATE,
+    appointment_time TIME,
+    work_hours INT,
+    status VARCHAR(20),
+    FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id) ON DELETE CASCADE,
+    FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id) ON DELETE CASCADE
+);"""
 )
 
 INSERT_CUSTOMER = (
