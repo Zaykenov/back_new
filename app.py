@@ -3,135 +3,7 @@ import psycopg2
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-CREATE_CUSTOMER_TABLE = (
-    """CREATE TABLE IF NOT EXISTS CUSTOMER (
-    user_id INT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    given_name VARCHAR(50) NOT NULL,
-    surname VARCHAR(50) NOT NULL,
-    city VARCHAR(50),
-    phone_number VARCHAR(20),
-    profile_description TEXT,
-    password VARCHAR(255) NOT NULL
-);"""
-)
-
-
-
-CREATE_CAREGIVER_TABLE = (
-    """CREATE TABLE IF NOT EXISTS CAREGIVER (
-    caregiver_user_id INT PRIMARY KEY,
-    photo VARCHAR(255),
-    gender VARCHAR(10),
-    caregiving_type VARCHAR(50),
-    hourly_rate DECIMAL(10, 2),
-    FOREIGN KEY (caregiver_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
-);"""
-)
-
-CREATE_MEMBER_TABLE = (
-    """CREATE TABLE IF NOT EXISTS MEMBER (
-    member_user_id INT PRIMARY KEY,
-    house_rules TEXT,
-    FOREIGN KEY (member_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
-);"""
-)
-
-CREATE_ADDRESS_TABLE = (
-    """CREATE TABLE IF NOT EXISTS ADDRESS (
-    member_user_id INT PRIMARY KEY,
-    house_number VARCHAR(10),
-    street VARCHAR(255),
-    town VARCHAR(50),
-    FOREIGN KEY (member_user_id) REFERENCES CUSTOMER(user_id) ON DELETE CASCADE
-);"""
-)
-
-CREATE_JOB_TABLE = (
-    """CREATE TABLE IF NOT EXISTS JOB (
-    job_id INT PRIMARY KEY,
-    member_user_id INT,
-    required_caregiving_type VARCHAR(50),
-    other_requirements TEXT,
-    date_posted DATE,
-    FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id) ON DELETE CASCADE
-);"""
-)
-
-CREATE_JOB_APPLICATION_TABLE = (
-    """CREATE TABLE IF NOT EXISTS JOB_APPLICATION (
-    caregiver_user_id INT,
-    job_id INT,
-    date_applied DATE,
-    PRIMARY KEY (caregiver_user_id, job_id),
-    FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id) ON DELETE CASCADE,
-    FOREIGN KEY (job_id) REFERENCES JOB(job_id) ON DELETE CASCADE
-);"""
-)
-
-CREATE_APPOINTMENT_TABLE = (
-    """CREATE TABLE IF NOT EXISTS APPOINTMENT (
-    appointment_id INT PRIMARY KEY,
-    caregiver_user_id INT,
-    member_user_id INT,
-    appointment_date DATE,
-    appointment_time TIME,
-    work_hours INT,
-    status VARCHAR(20),
-    FOREIGN KEY (caregiver_user_id) REFERENCES CAREGIVER(caregiver_user_id) ON DELETE CASCADE,
-    FOREIGN KEY (member_user_id) REFERENCES MEMBER(member_user_id) ON DELETE CASCADE
-);"""
-)
-
-INSERT_CUSTOMER = (
-    """INSERT INTO CUSTOMER (
-        user_id, email, given_name, surname, city, phone_number, profile_description, password
-    ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s) RETURNING user_id"""
-)
-
-INSERT_CAREGIVER = (
-    """INSERT INTO CAREGIVER (caregiver_user_id, photo, gender, caregiving_type, hourly_rate)VALUES (%s, %s, %s, %s, %s) RETURNING caregiver_user_id"""
-)
-
-INSERT_MEMBER = (
-    """INSERT INTO MEMBER (member_user_id, house_rules)VALUES (%s, %s) RETURNING member_user_id"""
-)
-
-INSERT_ADDRESS = (
-    """INSERT INTO ADDRESS (
-        member_user_id, house_number, street, town
-    ) VALUES (%s, %s, %s, %s) RETURNING address_id"""
-)
-
-INSERT_JOB = (
-    """INSERT INTO JOB (
-        member_user_id, required_caregiving_type, other_requirements
-    ) VALUES (%s, %s, %s) RETURNING job_id"""
-)
-
-INSERT_JOB_APPLICATION = (
-    """INSERT INTO JOB_APPLICATION (
-        caregiver_user_id, job_id
-    ) VALUES (%s, %s) RETURNING application_id"""
-)
-
-INSERT_APPOINTMENT = (
-    """INSERT INTO APPOINTMENT (
-        caregiver_user_id, member_user_id, appointment_date, appointment_time, work_hours, status
-    ) VALUES (%s, %s, %s, %s, %s, %s) RETURNING appointment_id"""
-)
-
-UPDATE_CUSTOMER = (
-    """UPDATE CUSTOMER 
-       SET email = %s, given_name = %s, surname = %s, city = %s, 
-           phone_number = %s, profile_description = %s, password = %s 
-       WHERE user_id = %s"""
-)
-
-DELETE_CUSTOMER = """DELETE FROM CUSTOMER WHERE user_id = %s"""
-
-SELECT_CUSTOMER = """SELECT * FROM CUSTOMER WHERE user_id = %s"""
+from psycopg2 import extras
 
 load_dotenv()
 app = Flask(__name__)
@@ -143,149 +15,197 @@ CORS(app)
 def home():
     return "Welcome to the Customer API!"
 
-@app.post("/api/customer")
-def create_customer(): 
-    data = request.get_json()
-    user_id = data.get("user_id")
-    email = data.get("email")
-    given_name = data.get("given_name")
-    surname = data.get("surname")
-    city = data.get("city")
-    phone_number = data.get("phone_number")
-    profile_description = data.get("profile_description")
-    password = data.get("password")
-
-    with connection: 
-        with connection.cursor() as cursor: 
-            cursor.execute(CREATE_CUSTOMER_TABLE)
-            cursor.execute(INSERT_CUSTOMER, (
-                user_id, email, given_name, surname, city, phone_number, profile_description, password
-            ))
-            user_id = cursor.fetchone()[0]
-
-    return {"id": user_id, "message": f"Customer {given_name} created."}, 201
-
-@app.get("/api/customer/<int:user_id>")
-def get_customer(user_id):
-    with connection:
+@app.get("/api/user/<string:user_name>")
+def get_user(user_name):
+    try:
         with connection.cursor() as cursor:
-            cursor.execute(SELECT_CUSTOMER, (user_id,))
-            customer = cursor.fetchone()
+            # Execute the SQL query to fetch the user by UserName
+            cursor.execute("SELECT * FROM Users WHERE UserName = %s", (user_name,))
+            user = cursor.fetchone()
 
-    if customer:
-        keys_order = ["user_id", "email", "given_name", "surname", "city", "phone_number", "profile_description", "password"]
-        customer_dict = {key: value for key, value in zip(keys_order, customer)}
-        return {"customers": [customer_dict]}, 200
+        # Check if a user was found
+        if user:
+            user_dict = {
+                "UserID": user[0],
+                "UserName": user[1]
+            }
+            return jsonify(user_dict), 200
+        else:
+            return jsonify({"message": "User not found"}), 404
+    finally:
+        pass
+
+@app.get("/api/grammar")
+def get_grammar():
+    data = {
+        "levels": {
+            "easy": {
+                "text": "В казахском языке стандартный порядок слов — подлежащее (S), сказуемое (V) и дополнение (O). Например, \"Мен қалам сатып алдым\" (Я купил ручку), где \"Мен\" — подлежащее, \"сатып алдым\" — сказуемое, а \"қалам\" — дополнение.",
+                "questions": [
+                    {
+                        "question": "Какой порядок слов в казахском предложении?",
+                        "options": ["VSO", "SOV", "OSV", "SVO"],
+                        "correct_option": 3
+                    },
+                    {
+                        "question": "Что означает \"Мен\" в предложении \"Мен қалам сатып алдым\"?",
+                        "options": ["Ручка", "Я", "Купил", "И"],
+                        "correct_option": 1
+                    },
+                    {
+                        "question": "Какая часть речи \"сатып алдым\"?",
+                        "options": ["Подлежащее", "Дополнение", "Сказуемое", "Прилагательное"],
+                        "correct_option": 2
+                    }
+                ],
+                "fill_in_gaps": [
+                    {
+                        "first_part": "",
+                        "last_part": "кітап оқимын",
+                        "options": ["Оқимын кітап", "Кітап оқимын", "Мен кітап оқимын", "Оқимын мен кітап"],
+                        "correct_option": 2
+                    }
+                ]
+            },
+            "medium": {
+                "text": "Существительные в казахском языке имеют единственное и множественное число. Множественное число обычно формируется добавлением суффикса -лар (-лер), например, \"қалам\" (ручка) становится \"қаламдар\" (ручки).",
+                "questions": [
+                    {
+                        "question": "Какой суффикс используется для образования множественного числа существительных?",
+                        "options": ["-мен", "-тен", "-лар / -лер", "-дан"],
+                        "correct_option": 2
+                    },
+                    {
+                        "question": "Что означает слово \"қаламдар\"?",
+                        "options": ["Ручки", "Книги", "Школы", "Столы"],
+                        "correct_option": 0
+                    },
+                    {
+                        "question": "Как переводится на русский \"иттер\"?",
+                        "options": ["Коты", "Лошади", "Собаки", "Птицы"],
+                        "correct_option": 2
+                    }
+                ],
+                "fill_in_gaps": [
+                    {
+                        "first_part": "Біз ",
+                        "last_part": " сатып алдық",
+                        "options": ["алма", "алманы", "алмалар", "алмамен"],
+                        "correct_option": 2
+                    }
+                ]
+            },
+            "hard": {
+                "text": "Глаголы в казахском языке спрягаются по временам. Для прошедшего времени к корню глагола добавляются суффиксы, например, \"жазу\" (писать) становится \"жазды\" (он написал).",
+                "questions": [
+                    {
+                        "question": "Какой суффикс добавляется к глаголу \"жазу\" для образования прошедшего времени в третьем лице?",
+                        "options": ["-ды", "-ді", "-ты", "-ті"],
+                        "correct_option": 0
+                    },
+                    {
+                        "question": "Как будет \"читать\" в прошедшем времени для первого лица единственного числа?",
+                        "options": ["Оқиды", "Оқыдым", "Оқылады", "Оқытым"],
+                        "correct_option": 1
+                    },
+                    {
+                        "question": "Что означает \"сөйледі\"?",
+                        "options": ["Говорит", "Слушал", "Сказал", "Пойдет"],
+                        "correct_option": 2
+                    }
+                ],
+                "fill_in_gaps": [
+                    {
+                        "first_part": "Ол кеше мектепке ",
+                        "last_part": "",
+                        "options": ["барады", "барды", "бар", "баратын"],
+                        "correct_option": 1
+                    }
+                ]
+            }
+        }
+    }
+    return jsonify(data)
+@app.get("/api/speaking")
+def get_speaking():
+    speaking_data = {}
+
+    try:
+        with connection.cursor(cursor_factory=extras.DictCursor) as cursor:  # Using DictCursor
+            cursor.execute("SELECT * FROM LanguageLearning ORDER BY level, id;")
+            results = cursor.fetchall()
+            
+            for record in results:
+                level = record['level']
+                if level not in speaking_data:
+                    speaking_data[level] = []
+                
+                speaking_data[level].append({
+                    "Word": record['word'],
+                    "Word translation": record['word_translation'],
+                    "Sentence": record['sentence'],
+                    "Sentence translation": record['sentence_translation'],
+                    "Audio Source Word": record['audio_source_word'],
+                    "Audio Source Sentence": record['audio_source_sentence']
+                })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    if speaking_data:
+        return jsonify(speaking_data), 200
     else:
-        return jsonify({"message": "Customer not found"}), 404
+        return jsonify({"message": "Speaking content not found"}), 404
 
+@app.get("/api/reading")
+def get_reading():
+    # Initialize the dictionary to hold the entire reading structure
+    reading_data = {
+        "reading": {
+            "levels": {
+                "easy": [],
+                "medium": [],
+                "hard": []
+            }
+        }
+    }
 
-@app.get("/api/customers")
-def get_all_customers():
-    with connection:
+    try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT user_id, email, given_name, surname, city, phone_number, profile_description, password FROM CUSTOMER")
-            customers = cursor.fetchall()
+            # Execute the new simplified SQL query
+            cursor.execute("""
+                SELECT t.level, t.text, q.question, q.option1, q.option2, q.option3, q.option4, q.correct_option
+                FROM ReadingTexts t
+                JOIN ReadingQuestions q ON t.id = q.text_id
+                ORDER BY t.level, t.id, q.id;
+            """)
+            results = cursor.fetchall()
 
-    if customers:
-        # Define the order of keys in the desired JSON format
-        keys_order = ["user_id", "email", "given_name", "surname", "city", "phone_number", "profile_description", "password"]
+            # Process fetched data
+            for level, text, question, option1, option2, option3, option4, correct_option in results:
+                # Ensure each level is represented in the dictionary, dynamically adjust to data
+                if level not in reading_data["reading"]["levels"]:
+                    reading_data["reading"]["levels"][level] = []
 
-        # Convert the result to the desired JSON format with preserved order
-        customer_list = [
-            {key: value for key, value in zip(keys_order, customer)} for customer in customers
-        ]
+                # Append the text and its questions directly
+                reading_data["reading"]["levels"][level].append({
+                    "text": text,
+                    "questions": [{
+                        "question": question,
+                        "options": [option1, option2, option3, option4],
+                        "correct_option": correct_option
+                    }]
+                })
 
-        return {"customers": customer_list}, 200
+    except Exception as e:
+        # Handle potential errors in execution
+        return jsonify({"error": str(e)}), 500
+
+    # Check if any data was added and respond accordingly
+    if any(reading_data["reading"]["levels"][level] for level in ["easy", "medium", "hard"]):
+        return jsonify(reading_data), 200
     else:
-        return jsonify({"message": "No customers found"}), 404
-
-
-
-@app.put("/api/customer/<int:user_id>")
-def update_customer(user_id):
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"message": "No data provided for update"}), 400
-
-    set_clause = ", ".join(f"{key} = %s" for key in data.keys())
-    values = tuple(data.values()) + (user_id,)
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(f"UPDATE CUSTOMER SET {set_clause} WHERE user_id = %s", values)
-
-    return jsonify({"message": f"Customer {user_id} updated"}), 200
-
-@app.delete("/api/customer/<int:user_id>")
-def delete_customer(user_id):
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(DELETE_CUSTOMER, (user_id,))
-
-    return jsonify({"message": f"Customer {user_id} deleted"}), 200
-
-@app.post("/api/caregiver")
-def create_caregiver():
-    data = request.get_json()
-    photo = data.get("photo")
-    gender = data.get("gender")
-    caregiving_type = data.get("caregiving_type")
-    hourly_rate = data.get("hourly_rate")
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(CREATE_CAREGIVER_TABLE)
-            cursor.execute(INSERT_CAREGIVER, (photo, gender, caregiving_type, hourly_rate))
-            caregiver_user_id = cursor.fetchone()[0]
-
-    return {"id": caregiver_user_id, "message": f"Caregiver created."}, 201
-
-@app.post("/api/member")
-def create_member():
-    data = request.get_json()
-    house_rules = data.get("house_rules")
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(CREATE_MEMBER_TABLE)
-            cursor.execute(INSERT_MEMBER, (house_rules,))
-            member_user_id = cursor.fetchone()[0]
-
-    return {"id": member_user_id, "message": f"Member created."}, 201
-
-@app.post("/api/address")
-def create_address():
-    data = request.get_json()
-    member_user_id = data.get("member_user_id")
-    house_number = data.get("house_number")
-    street = data.get("street")
-    town = data.get("town")
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(CREATE_ADDRESS_TABLE)
-            cursor.execute(INSERT_ADDRESS, (member_user_id, house_number, street, town))
-            address_id = cursor.fetchone()[0]
-
-    return {"id": address_id, "message": f"Address created."}, 201
-
-@app.post("/api/job")
-def create_job():
-    data = request.get_json()
-    member_user_id = data.get("member_user_id")
-    required_caregiving_type = data.get("required_caregiving_type")
-    other_requirements = data.get("other_requirements")
-
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(CREATE_JOB_TABLE)
-            cursor.execute(INSERT_JOB, (member_user_id, required_caregiving_type, other_requirements))
-            job_id = cursor.fetchone()[0]
-
-    return {"id": job_id, "message": f"Job created."}, 201
-
+        return jsonify({"message": "Reading content not found"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)
